@@ -1,74 +1,65 @@
-# Besoia backend
+# besoia_pilot_backend
 
-Express API for sessions, answers, matching, events and CSV export. It is the only backend in the repo. For setup, see the [root README](../README.md).
+Express + Postgres API for the Besoia pilot. Frontend: [besoia_pilot_frontend](https://github.com/TharinduSampath2000/besoia_pilot_frontend).
+
+## Setup
+
+Needs Node 20+ and Postgres.
 
 ```bash
-npm run dev          # node --watch server.js on PORT (default 3000)
-npm run db:migrate   # apply src/config/schema.sql (idempotent)
+sudo -u postgres psql -c "CREATE USER besoia WITH PASSWORD 'besoia';"
+sudo -u postgres createdb -O besoia besoia
+
+cp .env.example .env
+npm install
+npm run db:migrate
+npm run dev
 ```
 
-## Source layout
+Runs on http://localhost:3000. Check http://localhost:3000/api/health.
 
-```
-server.js                  Starts the HTTP server
-src/app.js                 CORS, JSON, cookies, routes, /api/health, JSON 404 and error handler
-src/config/
-  db.js                    pg connection pool
-  schema.sql, migrate.js   Tables: sessions, answers, matches, events
-  questions.js             The seven questions and their options
-  icebreakers.js           Icebreaker list (content comes from the client)
-src/middleware/session.js  Reads and validates the besoia_session cookie
-src/controllers/           userController, quizController, matchController, eventController
-src/routes/                Route definitions; every async handler is wrapped in asyncHandler
-src/utils/
-  scoringEngine.js         calculateCompatibility, findSharedAnswers
-  asyncHandler.js          Sends rejected promises to the Express error handler
-```
+Then start the frontend (`npm run dev` in besoia_pilot_frontend) and open http://localhost:5173. Use a private window for a second user.
+
+## Env
+
+| Var | |
+|---|---|
+| `DATABASE_URL` | Postgres connection string |
+| `QR_SECRET` | Signs QR tokens. Required in production |
+| `EXPORT_TOKEN` | Needed for CSV exports in production |
+| `CLIENT_ORIGIN` | CORS origin, defaults to http://localhost:5173 |
 
 ## API
 
-| Method | Path | Purpose |
+| Method | Path | |
 |---|---|---|
-| `GET` | `/api/health` | Database connectivity check |
-| `POST` | `/api/register` | Create or rename the cookie session. Body: `{ name }` (1–80 characters) |
-| `GET` | `/api/session` | `{ session: { sessionId, name, quizComplete } }`, or `{ session: null }` |
-| `DELETE` | `/api/session` | Clear the session cookie |
-| `GET` | `/api/quiz/questions` | The seven questions |
-| `POST` | `/api/quiz/answers` | Body: `{ answers: { "1": "...", …, "7": "..." } }`. All seven are required |
-| `POST` | `/api/matches/scan` | Body: `{ sessionId }` from the scanned QR. Creates and returns the match |
-| `GET` | `/api/matches/pending` | Latest match for this session, or `{ match: null }` |
-| `POST` | `/api/events` | Body: `{ eventType: "qr_generated" }` |
-| `GET` | `/api/events/export.csv` | All events as CSV |
+| GET | `/api/health` | DB check |
+| POST | `/api/register` | `{ name }` |
+| GET | `/api/session` | Current session |
+| DELETE | `/api/session` | Clear session |
+| GET | `/api/quiz/questions` | |
+| POST | `/api/quiz/answers` | `{ answers: { "1": "...", ..., "7": "..." } }` |
+| GET | `/api/matches/qr-token` | `{ token, refreshIn }` |
+| POST | `/api/matches/scan` | `{ code }` |
+| GET | `/api/matches/recent` | Last 20 matches for the session |
+| POST | `/api/events` | `{ eventType: "qr_generated" }` |
+| GET | `/api/export/users.csv?token=` | |
+| GET | `/api/export/matches.csv?token=` | |
+| GET | `/api/export/events.csv?token=` | |
 
-A match response looks like this:
+QR tokens refresh every 30s and are valid for 60s.
 
-```json
-{
-  "match": {
-    "matchId": "uuid",
-    "score": 57,
-    "icebreaker": "What would your ideal low-effort day look like?",
-    "createdAt": "2026-09-29T10:02:32.648Z",
-    "friend": { "id": "uuid", "name": "Amaya" },
-    "sharedAnswers": [
-      { "questionId": 1, "question": "What is your ultimate idea of a perfect Saturday?", "answer": "Cozy night at home" }
-    ]
-  }
-}
-```
+Score = identical answers / 7. Score, shared answers and icebreaker are saved on the match.
 
-`friend` is always the other person from the caller's point of view.
+## Deploy
 
-## Validation and errors
+Render blueprint in `render.yaml` (API, Postgres, frontend static site, Frankfurt).
 
-- Session cookies that aren't a valid UUID are ignored.
-- `POST /matches/scan` returns `400` with a message the user can read in these cases:
-  - the scanned text isn't a Besoia code
-  - it's your own code
-  - you haven't finished your questions
-  - the other person hasn't finished theirs
-- Unknown `/api/*` routes return `404 { error: "Not found" }`. Unexpected errors return `500 { error: "Unexpected server error" }` and are logged to the console.
+1. Push both repos.
+2. Render > New > Blueprint > this repo.
+3. If the API URL isn't `besoia-api.onrender.com`, fix the `/api/*` rewrite in `render.yaml`.
+4. Check `https://besoia.onrender.com/api/health`.
 
-## Scoring
+Free instance sleeps after 15 min idle. Switch `besoia-api` to Starter before the test day and back after.
 
-`calculateCompatibility` counts the questions where both answers are identical and returns `round(matches / 7 × 100)`. `findSharedAnswers` returns those questions with their text and the shared answer. If the client changes the scoring spec, update `src/utils/scoringEngine.js`.
+Free Postgres expires after 30 days, so download the CSVs after the test. `EXPORT_TOKEN` is in the service's Environment tab.
