@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 CREATE TABLE IF NOT EXISTS sessions (
   id uuid PRIMARY KEY,
   name text NOT NULL,
@@ -21,8 +19,11 @@ CREATE TABLE IF NOT EXISTS matches (
   session_b uuid NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
   score integer NOT NULL CHECK (score BETWEEN 0 AND 100),
   icebreaker text NOT NULL,
+  shared_answers jsonb NOT NULL DEFAULT '[]',
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS shared_answers jsonb NOT NULL DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS events (
   id bigserial PRIMARY KEY,
