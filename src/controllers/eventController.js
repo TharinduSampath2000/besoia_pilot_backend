@@ -8,9 +8,3 @@ export async function logEvent(request, response) {
   return response.status(201).json({ logged: true });
 }
 
-export async function exportEvents(_request, response) {
-  const { rows } = await pool.query('SELECT id, session_id, event_type, metadata, created_at FROM events ORDER BY created_at ASC');
-  const header = 'id,session_id,event_type,metadata,created_at';
-  const lines = rows.map((row) => [row.id, row.session_id, row.event_type, JSON.stringify(row.metadata).replaceAll('"', '""'), row.created_at.toISOString()].map((value) => `"${value}"`).join(','));
-  response.type('text/csv').send([header, ...lines].join('\n'));
-}
