@@ -26,7 +26,9 @@ async function sendWithBrevo({ subject, text, attachments = [] }) {
     }),
     signal: AbortSignal.timeout(15_000)
   });
-  if (!response.ok) throw new Error(`Brevo ${response.status}: ${await response.text()}`);
+  const body = await response.text();
+  if (!response.ok) throw new Error(`Brevo ${response.status}: ${body}`);
+  console.log('Report email accepted by Brevo:', body);
 }
 
 let transporter;

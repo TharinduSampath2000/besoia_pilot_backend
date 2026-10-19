@@ -66,7 +66,7 @@ let lastSentAt = 0;
 // emails every report to REPORT_EMAIL in one message; recipients are fixed, so no auth
 export async function emailReport(_request, response) {
   if (!mailConfigured()) return response.status(503).json({ ok: false, message: 'Email is not set up yet.' });
-  if (Date.now() - lastSentAt < RESEND_AFTER_MS) return response.json({ ok: true, message: `A report was already sent to ${process.env.REPORT_EMAIL} a moment ago.` });
+  if (Date.now() - lastSentAt < RESEND_AFTER_MS) return response.json({ ok: true, message: 'A report was already sent a moment ago.' });
 
   lastSentAt = Date.now();
   const [stats, users, matches, events] = await Promise.all([loadStats(), usersCsv(), matchesCsv(), eventsCsv()]);
@@ -86,5 +86,5 @@ export async function emailReport(_request, response) {
     console.error('Report email failed:', error.message);
     return response.status(502).json({ ok: false, message: "Couldn't send the report email. Please try again later." });
   }
-  return response.json({ ok: true, message: `Report sent to ${process.env.REPORT_EMAIL}.` });
+  return response.json({ ok: true, message: 'Report sent.' });
 }
