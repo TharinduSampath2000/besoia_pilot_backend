@@ -20,6 +20,12 @@ services:
         generateValue: true
       - key: EXPORT_TOKEN
         generateValue: true
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: REPORT_EMAIL
+        sync: false
 
   - type: web
     name: besoia
