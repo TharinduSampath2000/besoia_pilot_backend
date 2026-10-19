@@ -63,29 +63,13 @@ export const exportEvents = csvHandler('events.csv', eventsCsv);
 const RESEND_AFTER_MS = 60_000;
 let lastSentAt = 0;
 
-const escapeHtml = (text) => String(text).replace(/[<>&"]/g, (char) => `&#${char.charCodeAt(0)};`);
+// emails every report to REPORT_EMAIL in one message; recipients are fixed, so no auth
+export async function emailReport(_request, response) {
+  if (!mailConfigured()) return response.status(503).json({ ok: false, message: 'Email is not set up yet.' });
+  if (Date.now() - lastSentAt < RESEND_AFTER_MS) return response.json({ ok: true, message: `A report was already sent to ${process.env.REPORT_EMAIL} a moment ago.` });
 
-function page(response, { ok, message, stats }) {
-  const appUrl = process.env.CLIENT_ORIGIN || '/';
-  response.type('html').send(`<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><title>Besoia report</title>
-<body style="font:16px/1.6 system-ui,sans-serif;margin:24px;max-width:480px">
-<h1 style="font-size:22px">Besoia report</h1>
-<p style="padding:12px 16px;border-radius:12px;background:${ok ? '#E7F6EC' : '#FEF3F2'};color:${ok ? '#14532D' : '#B42318'}">${escapeHtml(message)}</p>
-${stats ? `<p>${statsText(stats).join('<br>')}</p>` : ''}
-<a href="${escapeHtml(appUrl)}" style="display:inline-block;margin-top:8px;padding:12px 20px;border-radius:12px;background:#0F4C75;color:#fff;text-decoration:none;font-weight:600">Go to Besoia</a>
-</body>`);
-}
-
-// opening /api/export emails every report in one message
-export async function exportIndex(_request, response) {
-  if (!mailConfigured()) return page(response.status(503), { ok: false, message: 'Email is not set up. Add the MAIL_* variables and REPORT_EMAIL.' });
-
+  lastSentAt = Date.now();
   const [stats, users, matches, events] = await Promise.all([loadStats(), usersCsv(), matchesCsv(), eventsCsv()]);
-  const waitSeconds = Math.ceil((lastSentAt + RESEND_AFTER_MS - Date.now()) / 1000);
-  if (waitSeconds > 0) {
-    return page(response, { ok: true, stats, message: `A report was already sent to ${process.env.REPORT_EMAIL} less than a minute ago. Reload in ${waitSeconds}s to send another.` });
-  }
-
   const date = new Date().toISOString().slice(0, 10);
   try {
     await sendMail({
@@ -98,9 +82,9 @@ export async function exportIndex(_request, response) {
       ]
     });
   } catch (error) {
+    lastSentAt = 0;
     console.error('Report email failed:', error.message);
-    return page(response.status(502), { ok: false, stats, message: `Couldn't send the report: ${error.message}` });
+    return response.status(502).json({ ok: false, message: "Couldn't send the report email. Please try again later." });
   }
-  lastSentAt = Date.now();
-  page(response, { ok: true, stats, message: `Report sent to ${process.env.REPORT_EMAIL}.` });
+  return response.json({ ok: true, message: `Report sent to ${process.env.REPORT_EMAIL}.` });
 }

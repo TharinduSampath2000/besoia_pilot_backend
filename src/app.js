@@ -8,6 +8,8 @@ import quizRoutes from './routes/quizRoutes.js';
 import matchRoutes from './routes/matchRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
+import { emailReport } from './controllers/exportController.js';
+import { asyncHandler } from './utils/asyncHandler.js';
 
 export const app = express();
 
@@ -23,6 +25,7 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/export', exportRoutes);
+app.post('/api/report', asyncHandler(emailReport));
 
 app.get('/api/health', async (_request, response) => {
   try {

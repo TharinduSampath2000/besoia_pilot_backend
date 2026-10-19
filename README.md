@@ -27,7 +27,7 @@ Then start the frontend (`npm run dev` in besoia_pilot_frontend) and open http:/
 | `DATABASE_URL` | Postgres connection string |
 | `QR_SECRET` | Signs QR tokens. Required in production |
 | `EXPORT_TOKEN` | Needed for CSV exports in production |
-| `CLIENT_ORIGIN` | App URL: CORS origin and the report page's "Go to Besoia" button. Defaults to http://localhost:5173 |
+| `CLIENT_ORIGIN` | CORS origin, defaults to http://localhost:5173 |
 | `MAIL_SERVICE` | Nodemailer service name, e.g. `gmail`. Or use `MAIL_HOST` + `MAIL_PORT` |
 | `MAIL_HOST`, `MAIL_PORT` | SMTP server (port 465 uses SSL, anything else STARTTLS; default 587) |
 | `MAIL_USER`, `MAIL_PASS` | SMTP login |
@@ -48,7 +48,7 @@ Then start the frontend (`npm run dev` in besoia_pilot_frontend) and open http:/
 | POST | `/api/matches/scan` | `{ code }` |
 | GET | `/api/matches/recent` | Last 20 matches for the session |
 | POST | `/api/events` | `{ eventType: "qr_generated" }` |
-| GET | `/api/export` | Emails the counts and all CSVs to `REPORT_EMAIL` in one message, shows the result |
+| POST | `/api/report` | Emails the counts and all CSVs to `REPORT_EMAIL` in one message. Used by the frontend's `/report` page |
 | GET | `/api/export/users.csv?token=` | |
 | GET | `/api/export/matches.csv?token=` | |
 | GET | `/api/export/events.csv?token=` | |
@@ -70,6 +70,6 @@ Free instance sleeps after 15 min idle. Switch `besoia-api` to Starter before th
 
 Free Postgres expires after 30 days, so download the CSVs after the test.
 
-Report: open `https://besoia.onrender.com/api/export` and enter `EXPORT_TOKEN` as the password (username can be anything). It emails all three CSVs to `REPORT_EMAIL` and shows whether it worked. It won't send again within 60 seconds, so a reload doesn't duplicate it. The CSVs can still be downloaded directly from `/api/export/*.csv`.
+Report: open `https://besoia.onrender.com/report`. It emails all three CSVs to `REPORT_EMAIL` and shows whether it worked, with no sign-in. It won't send again within 60 seconds. The raw CSVs are still at `/api/export/*.csv`, behind `EXPORT_TOKEN` (as `?token=` or the browser's password prompt).
 
 Gmail: `MAIL_SERVICE=gmail`, `MAIL_USER` = the address, `MAIL_PASS` = an app password (turn on 2-Step Verification, then https://myaccount.google.com/apppasswords).
