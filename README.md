@@ -28,8 +28,10 @@ Then start the frontend (`npm run dev` in besoia_pilot_frontend) and open http:/
 | `QR_SECRET` | Signs QR tokens. Required in production |
 | `EXPORT_TOKEN` | Needed for CSV exports in production |
 | `CLIENT_ORIGIN` | CORS origin, defaults to http://localhost:5173 |
-| `GMAIL_USER` | Gmail address the report is sent from |
-| `GMAIL_APP_PASSWORD` | Google app password for that account |
+| `MAIL_SERVICE` | Nodemailer service name, e.g. `gmail`. Or use `MAIL_HOST` + `MAIL_PORT` |
+| `MAIL_HOST`, `MAIL_PORT` | SMTP server (port 465 uses SSL, anything else STARTTLS; default 587) |
+| `MAIL_USER`, `MAIL_PASS` | SMTP login |
+| `EMAIL_FROM_NAME`, `EMAIL_FROM_ADDRESS` | Sender, default `Besoia` / `MAIL_USER` |
 | `REPORT_EMAIL` | Who gets the report (comma-separate for several) |
 
 ## API
@@ -69,6 +71,6 @@ Free instance sleeps after 15 min idle. Switch `besoia-api` to Starter before th
 
 Free Postgres expires after 30 days, so download the CSVs after the test.
 
-Exports: open `https://besoia.onrender.com/api/export` and enter `EXPORT_TOKEN` as the password (username can be anything). `?token=` also works. Set `EXPORT_TOKEN` in the service's Environment tab. The page has an **Email report** button once the three email variables are set.
+Exports: open `https://besoia.onrender.com/api/export` and enter `EXPORT_TOKEN` as the password (username can be anything). `?token=` also works. Set `EXPORT_TOKEN` in the service's Environment tab. The page has an **Email report** button once the mail variables and `REPORT_EMAIL` are set.
 
-Gmail app password: turn on 2-Step Verification, then create one at https://myaccount.google.com/apppasswords.
+Gmail: `MAIL_SERVICE=gmail`, `MAIL_USER` = the address, `MAIL_PASS` = an app password (turn on 2-Step Verification, then https://myaccount.google.com/apppasswords).

@@ -20,9 +20,19 @@ services:
         generateValue: true
       - key: EXPORT_TOKEN
         generateValue: true
-      - key: GMAIL_USER
+      - key: MAIL_SERVICE
         sync: false
-      - key: GMAIL_APP_PASSWORD
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        sync: false
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASS
+        sync: false
+      - key: EMAIL_FROM_NAME
+        sync: false
+      - key: EMAIL_FROM_ADDRESS
         sync: false
       - key: REPORT_EMAIL
         sync: false

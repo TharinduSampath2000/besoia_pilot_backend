@@ -76,7 +76,7 @@ export async function exportIndex(request, response) {
   const link = (file) => `<li><a href="/api/export/${file}${token}">${file}</a></li>`;
   const email = mailConfigured()
     ? `<form method="post" action="/api/export/email${token}"><button style="font:inherit;padding:10px 16px">Email report to ${process.env.REPORT_EMAIL}</button></form>`
-    : '<p>Email not set up (GMAIL_USER, GMAIL_APP_PASSWORD, REPORT_EMAIL).</p>';
+    : '<p>Email not set up (MAIL_* and REPORT_EMAIL).</p>';
   page(response, `<p>${statsText(stats).join('<br>')}</p>
 <ul>${['users.csv', 'matches.csv', 'events.csv'].map(link).join('')}</ul>
 ${email}`);
