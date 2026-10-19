@@ -31,3 +31,22 @@ export async function exportEvents(_request, response) {
   const { rows } = await pool.query('SELECT id, session_id, event_type, metadata, created_at FROM events ORDER BY created_at ASC');
   sendCsv(response, 'events.csv', ['id', 'session_id', 'event_type', 'metadata', 'created_at'], rows.map((row) => [row.id, row.session_id, row.event_type, row.metadata, row.created_at]));
 }
+
+export async function exportIndex(request, response) {
+  const { rows: [stats] } = await pool.query(
+    `SELECT
+      (SELECT count(*) FROM sessions)::int AS users,
+      (SELECT count(*) FROM (SELECT session_id FROM answers GROUP BY session_id HAVING count(*) = $1) done)::int AS completed,
+      (SELECT count(*) FROM matches)::int AS matches,
+      (SELECT round(avg(score))::int FROM matches) AS "averageScore"`,
+    [questions.length]
+  );
+  const token = request.query.token ? `?token=${encodeURIComponent(request.query.token)}` : '';
+  const link = (file) => `<li><a href="/api/export/${file}${token}">${file}</a></li>`;
+  response.type('html').send(`<!doctype html><meta name="viewport" content="width=device-width, initial-scale=1"><title>Besoia exports</title>
+<body style="font:16px/1.6 system-ui,sans-serif;margin:24px">
+<h1 style="font-size:22px">Besoia exports</h1>
+<p>Users: ${stats.users}<br>Completed questions: ${stats.completed}<br>Matches: ${stats.matches}<br>Average score: ${stats.averageScore ?? '-'}%</p>
+<ul>${['users.csv', 'matches.csv', 'events.csv'].map(link).join('')}</ul>
+</body>`);
+}

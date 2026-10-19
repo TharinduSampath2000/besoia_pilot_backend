@@ -43,6 +43,7 @@ Then start the frontend (`npm run dev` in besoia_pilot_frontend) and open http:/
 | POST | `/api/matches/scan` | `{ code }` |
 | GET | `/api/matches/recent` | Last 20 matches for the session |
 | POST | `/api/events` | `{ eventType: "qr_generated" }` |
+| GET | `/api/export` | Counts and download links |
 | GET | `/api/export/users.csv?token=` | |
 | GET | `/api/export/matches.csv?token=` | |
 | GET | `/api/export/events.csv?token=` | |
@@ -62,4 +63,6 @@ Render blueprint in `render.yaml` (API, Postgres, frontend static site, Frankfur
 
 Free instance sleeps after 15 min idle. Switch `besoia-api` to Starter before the test day and back after.
 
-Free Postgres expires after 30 days, so download the CSVs after the test. `EXPORT_TOKEN` is in the service's Environment tab.
+Free Postgres expires after 30 days, so download the CSVs after the test.
+
+Exports: open `https://besoia.onrender.com/api/export` and enter `EXPORT_TOKEN` as the password (username can be anything). `?token=` also works. Set `EXPORT_TOKEN` in the service's Environment tab.
