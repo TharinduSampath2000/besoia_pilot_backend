@@ -26,14 +26,8 @@ Then start the frontend (`npm run dev` in besoia_pilot_frontend) and open http:/
 |---|---|
 | `DATABASE_URL` | Postgres connection string |
 | `QR_SECRET` | Signs QR tokens. Required in production |
-| `EXPORT_TOKEN` | Needed for CSV exports in production |
 | `CLIENT_ORIGIN` | CORS origin, defaults to http://localhost:5173 |
-| `BREVO_API_KEY` | Send through Brevo's HTTP API instead of SMTP. Needs `EMAIL_FROM_ADDRESS` set to a verified Brevo sender |
-| `MAIL_SERVICE` | Nodemailer service name, e.g. `gmail`. Or use `MAIL_HOST` + `MAIL_PORT` |
-| `MAIL_HOST`, `MAIL_PORT` | SMTP server (port 465 uses SSL, anything else STARTTLS; default 587) |
-| `MAIL_USER`, `MAIL_PASS` | SMTP login |
-| `EMAIL_FROM_NAME`, `EMAIL_FROM_ADDRESS` | Sender, default `Besoia` / `MAIL_USER` |
-| `REPORT_EMAIL` | Who gets the report (comma-separate for several) |
+| `REPORTS_PASSCODE` | Passcode for the `/reports` download. Required in production |
 
 ## API
 
@@ -49,10 +43,7 @@ Then start the frontend (`npm run dev` in besoia_pilot_frontend) and open http:/
 | POST | `/api/matches/scan` | `{ code }` |
 | GET | `/api/matches/recent` | Last 20 matches for the session |
 | POST | `/api/events` | `{ eventType: "qr_generated" }` |
-| POST | `/api/report` | Emails the counts and all CSVs to `REPORT_EMAIL` in one message. Used by the frontend's `/report` page |
-| GET | `/api/export/users.csv?token=` | |
-| GET | `/api/export/matches.csv?token=` | |
-| GET | `/api/export/events.csv?token=` | |
+| POST | `/api/reports` | `{ passcode }`, returns an .xlsx with Users, Matches and Events sheets |
 
 QR tokens refresh every 30s and are valid for 60s.
 
@@ -69,10 +60,6 @@ Render blueprint in `render.yaml` (API, Postgres, frontend static site, Frankfur
 
 Free instance sleeps after 15 min idle. Switch `besoia-api` to Starter before the test day and back after.
 
-Free Postgres expires after 30 days, so download the CSVs after the test.
+Free Postgres expires after 30 days, so download the report after the test.
 
-Report: open `https://besoia.onrender.com/report`. It emails all three CSVs to `REPORT_EMAIL` and shows whether it worked, with no sign-in. It won't send again within 60 seconds. The raw CSVs are still at `/api/export/*.csv`, behind `EXPORT_TOKEN` (as `?token=` or the browser's password prompt).
-
-Render's free plan blocks SMTP ports, so use Brevo there: create a free account, verify a sender under Senders, create an API key under SMTP & API, and set `BREVO_API_KEY` and `EMAIL_FROM_ADDRESS`.
-
-Gmail (SMTP, paid instance or local): `MAIL_SERVICE=gmail`, `MAIL_USER` = the address, `MAIL_PASS` = an app password (turn on 2-Step Verification, then https://myaccount.google.com/apppasswords).
+Report: open `https://besoia.onrender.com/reports` and enter `REPORTS_PASSCODE` (set it in the service's Environment tab). The device remembers it, so later visits download straight away. 10 wrong passcodes from one IP lock it out for 15 minutes.

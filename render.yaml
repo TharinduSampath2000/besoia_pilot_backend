@@ -18,25 +18,7 @@ services:
           property: connectionString
       - key: QR_SECRET
         generateValue: true
-      - key: EXPORT_TOKEN
-        generateValue: true
-      - key: BREVO_API_KEY
-        sync: false
-      - key: MAIL_SERVICE
-        sync: false
-      - key: MAIL_HOST
-        sync: false
-      - key: MAIL_PORT
-        sync: false
-      - key: MAIL_USER
-        sync: false
-      - key: MAIL_PASS
-        sync: false
-      - key: EMAIL_FROM_NAME
-        sync: false
-      - key: EMAIL_FROM_ADDRESS
-        sync: false
-      - key: REPORT_EMAIL
+      - key: REPORTS_PASSCODE
         sync: false
 
   - type: web
