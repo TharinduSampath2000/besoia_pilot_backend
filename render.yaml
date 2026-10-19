@@ -20,6 +20,8 @@ services:
         generateValue: true
       - key: EXPORT_TOKEN
         generateValue: true
+      - key: BREVO_API_KEY
+        sync: false
       - key: MAIL_SERVICE
         sync: false
       - key: MAIL_HOST

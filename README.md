@@ -28,6 +28,7 @@ Then start the frontend (`npm run dev` in besoia_pilot_frontend) and open http:/
 | `QR_SECRET` | Signs QR tokens. Required in production |
 | `EXPORT_TOKEN` | Needed for CSV exports in production |
 | `CLIENT_ORIGIN` | CORS origin, defaults to http://localhost:5173 |
+| `BREVO_API_KEY` | Send through Brevo's HTTP API instead of SMTP. Needs `EMAIL_FROM_ADDRESS` set to a verified Brevo sender |
 | `MAIL_SERVICE` | Nodemailer service name, e.g. `gmail`. Or use `MAIL_HOST` + `MAIL_PORT` |
 | `MAIL_HOST`, `MAIL_PORT` | SMTP server (port 465 uses SSL, anything else STARTTLS; default 587) |
 | `MAIL_USER`, `MAIL_PASS` | SMTP login |
@@ -72,4 +73,6 @@ Free Postgres expires after 30 days, so download the CSVs after the test.
 
 Report: open `https://besoia.onrender.com/report`. It emails all three CSVs to `REPORT_EMAIL` and shows whether it worked, with no sign-in. It won't send again within 60 seconds. The raw CSVs are still at `/api/export/*.csv`, behind `EXPORT_TOKEN` (as `?token=` or the browser's password prompt).
 
-Gmail: `MAIL_SERVICE=gmail`, `MAIL_USER` = the address, `MAIL_PASS` = an app password (turn on 2-Step Verification, then https://myaccount.google.com/apppasswords).
+Render's free plan blocks SMTP ports, so use Brevo there: create a free account, verify a sender under Senders, create an API key under SMTP & API, and set `BREVO_API_KEY` and `EMAIL_FROM_ADDRESS`.
+
+Gmail (SMTP, paid instance or local): `MAIL_SERVICE=gmail`, `MAIL_USER` = the address, `MAIL_PASS` = an app password (turn on 2-Step Verification, then https://myaccount.google.com/apppasswords).
