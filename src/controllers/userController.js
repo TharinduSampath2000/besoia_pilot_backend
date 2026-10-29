@@ -5,8 +5,8 @@ import { clearSession, ensureSession } from '../middleware/session.js';
 
 export async function register(request, response) {
   const name = String(request.body?.name || '').trim();
-  if (!name) return response.status(400).json({ error: 'Name is required' });
-  if (name.length > 80) return response.status(400).json({ error: 'Name must be 80 characters or fewer' });
+  if (!name) return response.status(400).json({ error: 'Name is required', code: 'name_required' });
+  if (name.length > 80) return response.status(400).json({ error: 'Name must be 80 characters or fewer', code: 'name_too_long' });
 
   const sessionId = ensureSession(response, request.sessionId || randomUUID());
   await pool.query(

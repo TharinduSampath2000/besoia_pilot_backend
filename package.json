@@ -7,8 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "node --watch server.js",
-    "start": "node server.js",
+    "dev": "node init && node --watch server.js",
+    "start": "node init && node server.js",
     "db:migrate": "node src/config/migrate.js"
   },
   "dependencies": {

@@ -35,10 +35,10 @@ app.get('/api/health', async (_request, response) => {
 });
 
 app.use('/api', (_request, response) => {
-  response.status(404).json({ error: 'Not found' });
+  response.status(404).json({ error: 'Not found', code: 'not_found' });
 });
 
 app.use((error, _request, response, _next) => {
   console.error(error);
-  response.status(500).json({ error: 'Unexpected server error' });
+  response.status(500).json({ error: 'Unexpected server error', code: 'server' });
 });

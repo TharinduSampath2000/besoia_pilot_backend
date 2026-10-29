@@ -1,7 +1,8 @@
 import { timingSafeEqual } from 'node:crypto';
 import ExcelJS from 'exceljs';
 import { pool } from '../config/db.js';
-import { questions } from '../config/questions.js';
+import { findOption, questions } from '../config/questions.js';
+import { describeIcebreaker } from '../utils/scoringEngine.js';
 
 const MAX_FAILURES = 10;
 const LOCK_MS = 15 * 60_000;
@@ -23,7 +24,7 @@ async function usersSheet() {
   return {
     name: 'Users',
     header: ['ID', 'Name', ...questions.map((question) => `Q${question.id}`), 'Created at'],
-    rows: rows.map((row) => [row.id, row.name, ...questions.map((question) => row.answers[question.id] ?? ''), row.created_at])
+    rows: rows.map((row) => [row.id, row.name, ...questions.map((question) => findOption(question.id, row.answers[question.id])?.en ?? row.answers[question.id] ?? ''), row.created_at])
   };
 }
 
@@ -38,8 +39,8 @@ async function matchesSheet() {
     header: ['ID', 'User A ID', 'User A', 'User B ID', 'User B', 'Score %', 'Shared count', 'Shared answers', 'Icebreaker', 'Created at'],
     rows: rows.map((row) => [
       row.id, row.session_a, row.name_a, row.session_b, row.name_b, row.score,
-      row.shared_answers.length, row.shared_answers.map((item) => `Q${item.questionId}: ${item.answer}`).join('; '),
-      row.icebreaker, row.created_at
+      row.shared_answers.length, row.shared_answers.map((item) => `Q${item.questionId}: ${findOption(item.questionId, item.optionId)?.en ?? item.optionId}`).join('; '),
+      describeIcebreaker(row.icebreaker).en, row.created_at
     ])
   };
 }
@@ -55,14 +56,14 @@ async function eventsSheet() {
 
 export async function downloadReport(request, response) {
   if (!process.env.REPORTS_PASSCODE) {
-    if (process.env.NODE_ENV === 'production') return response.status(503).json({ error: 'Reports are disabled: set REPORTS_PASSCODE' });
+    if (process.env.NODE_ENV === 'production') return response.status(503).json({ error: 'Reports are disabled: set REPORTS_PASSCODE', code: 'reports_disabled' });
   } else {
     const key = String(request.headers['x-forwarded-for'] || request.ip).split(',')[0].trim();
     const entry = failures.get(key);
-    if (entry && entry.count >= MAX_FAILURES && Date.now() - entry.since < LOCK_MS) return response.status(429).json({ error: 'Too many wrong passcodes. Try again in 15 minutes.' });
+    if (entry && entry.count >= MAX_FAILURES && Date.now() - entry.since < LOCK_MS) return response.status(429).json({ error: 'Too many wrong passcodes. Try again in 15 minutes.', code: 'passcode_locked' });
     if (!passcodeMatches(request.body?.passcode)) {
       failures.set(key, entry && Date.now() - entry.since < LOCK_MS ? { ...entry, count: entry.count + 1 } : { count: 1, since: Date.now() });
-      return response.status(401).json({ error: 'Wrong passcode' });
+      return response.status(401).json({ error: 'Wrong passcode', code: 'passcode_wrong' });
     }
     failures.delete(key);
   }

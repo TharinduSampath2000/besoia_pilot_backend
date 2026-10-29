@@ -2,10 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { pool } from '../config/db.js';
 import { icebreakers } from '../config/icebreakers.js';
 import { questions } from '../config/questions.js';
-import { calculateCompatibility, findSharedAnswers } from '../utils/scoringEngine.js';
+import { calculateCompatibility, describeIcebreaker, describeSharedAnswers, findSharedAnswers } from '../utils/scoringEngine.js';
 import { createQrToken, verifyQrToken } from '../utils/qrToken.js';
 
 const RECENT_MATCH_LIMIT = 20;
+
+const describeMatch = (match) => ({ ...match, icebreaker: describeIcebreaker(match.icebreaker), sharedAnswers: describeSharedAnswers(match.sharedAnswers) });
 
 async function loadAnswers(sessionId) {
   const { rows } = await pool.query('SELECT question_id, answer FROM answers WHERE session_id = $1', [sessionId]);
@@ -13,24 +15,24 @@ async function loadAnswers(sessionId) {
 }
 
 export function getQrToken(request, response) {
-  if (!request.sessionId) return response.status(401).json({ error: 'Register before showing your code' });
+  if (!request.sessionId) return response.status(401).json({ error: 'Register before showing your code', code: 'register_first' });
   return response.json(createQrToken(request.sessionId));
 }
 
 export async function createMatch(request, response) {
-  if (!request.sessionId) return response.status(401).json({ error: 'Register before scanning a code' });
+  if (!request.sessionId) return response.status(401).json({ error: 'Register before scanning a code', code: 'register_first' });
   const { sessionId: scannedSessionId, error } = verifyQrToken(request.body?.code);
-  if (error === 'expired') return response.status(400).json({ error: 'That code has expired. Ask your partner to show their code again and scan the new one.' });
-  if (error) return response.status(400).json({ error: "That doesn't look like a Besoia QR code. Ask your partner to open their code and try again." });
-  if (scannedSessionId === request.sessionId) return response.status(400).json({ error: "That's your own code. Scan your partner's code instead." });
+  if (error === 'expired') return response.status(400).json({ error: 'That code has expired', code: 'code_expired' });
+  if (error) return response.status(400).json({ error: 'Not a Besoia QR code', code: 'code_invalid' });
+  if (scannedSessionId === request.sessionId) return response.status(400).json({ error: 'That is your own code', code: 'own_code' });
 
   const [firstAnswers, secondAnswers] = await Promise.all([loadAnswers(scannedSessionId), loadAnswers(request.sessionId)]);
-  if (Object.keys(secondAnswers).length !== questions.length) return response.status(400).json({ error: 'Complete your questions before scanning' });
-  if (Object.keys(firstAnswers).length !== questions.length) return response.status(400).json({ error: "Your partner hasn't finished their questions yet" });
+  if (Object.keys(secondAnswers).length !== questions.length) return response.status(400).json({ error: 'Complete your questions before scanning', code: 'finish_questions' });
+  if (Object.keys(firstAnswers).length !== questions.length) return response.status(400).json({ error: 'Partner has not finished their questions', code: 'partner_not_finished' });
 
   const score = calculateCompatibility(firstAnswers, secondAnswers);
   const sharedAnswers = findSharedAnswers(firstAnswers, secondAnswers);
-  const icebreaker = icebreakers[Math.floor(Math.random() * icebreakers.length)];
+  const icebreaker = icebreakers[Math.floor(Math.random() * icebreakers.length)].id;
   const { rows } = await pool.query(
     `WITH created AS (
       INSERT INTO matches (id, session_a, session_b, score, icebreaker, shared_answers)
@@ -44,7 +46,7 @@ export async function createMatch(request, response) {
     [randomUUID(), scannedSessionId, request.sessionId, score, icebreaker, JSON.stringify(sharedAnswers)]
   );
   await pool.query('INSERT INTO events (session_id, event_type, metadata) VALUES ($1, $2, $3), ($4, $5, $6)', [request.sessionId, 'qr_scanned', JSON.stringify({ scannedSessionId }), scannedSessionId, 'match_created', JSON.stringify({ score })]);
-  return response.status(201).json({ match: rows[0] });
+  return response.status(201).json({ match: describeMatch(rows[0]) });
 }
 
 export async function getRecentMatches(request, response) {
@@ -58,5 +60,5 @@ export async function getRecentMatches(request, response) {
      ORDER BY m.created_at DESC LIMIT $2`,
     [request.sessionId, RECENT_MATCH_LIMIT]
   );
-  return response.json({ matches: rows });
+  return response.json({ matches: rows.map(describeMatch) });
 }

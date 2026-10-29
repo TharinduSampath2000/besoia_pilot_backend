@@ -49,6 +49,8 @@ QR tokens refresh every 30s and are valid for 60s.
 
 Score = identical answers / 7. Score, shared answers and icebreaker are saved on the match.
 
+Questions, options and icebreakers live in `src/config/questions.js` and `src/config/icebreakers.js` with `en` and `es` text. Answers are stored as option ids (e.g. `night_out`), so people using different languages still match. The API returns `{ en, es }` text and the frontend picks one. Errors include a `code` the frontend translates. The Excel report is in English.
+
 ## Deploy
 
 Render blueprint in `render.yaml` (API, Postgres, frontend static site, Frankfurt).
